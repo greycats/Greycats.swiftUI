@@ -111,7 +111,7 @@ public struct Keychain {
             let defaultValue = instance[keyPath: storageKeyPath].defaultValue
 
             do {
-                let data = try KeychainInterface.get(service: Bundle.main.bundleIdentifier ?? "GreycatsPerference", account: key)
+                let data = try KeychainInterface.get(service: Bundle.main.bundleIdentifier ?? "GreycatsPreference", account: key)
                 return String(data: data, encoding: .utf8) ?? defaultValue
             } catch {
                 return defaultValue

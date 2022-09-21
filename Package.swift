@@ -18,7 +18,7 @@ let package = Package(
         .target(
             name: "GreycatsPreference",
             path: "Sources",
-            sources: ["Perference"]
+            sources: ["Preference"]
         )
     ]
 )
