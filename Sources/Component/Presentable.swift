@@ -46,6 +46,8 @@ struct PresentableViewModifier<T: Presentable>: ViewModifier {
 public final class PresentableContext: ObservableObject {
     @Published var isPresented = false
 
+    @Published public var boolFlag = false
+
     static var shared = PresentableContext()
 
     var body: (() -> AnyView)?
