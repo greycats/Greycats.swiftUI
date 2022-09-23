@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct StringPicker<T: Hashable, Label: View>: Presentable {
+struct StringPicker<T, Label: View>: Presentable {
     private var title: String
     var isPresented: Binding<Bool>
     var label: (T) -> Label
@@ -61,7 +61,7 @@ struct StringPicker<T: Hashable, Label: View>: Presentable {
     }
 }
 
-struct StringPickerModifier<T: Hashable, Label: View>: ViewModifier {
+struct StringPickerModifier<T, Label: View>: ViewModifier {
     let picker: StringPicker<T, Label>
     @Binding var isPresented: Bool
 
@@ -82,7 +82,7 @@ struct StringPickerModifier<T: Hashable, Label: View>: ViewModifier {
 }
 
 extension View {
-    public func stringPicker<T: Hashable, Label: View>(title: String, isPresented: Binding<Bool>, choices: @escaping () -> [T], label: @escaping ((T) -> Label), onDone: @escaping ((T) -> Void) = { _ in }) -> some View {
+    public func stringPicker<T, Label: View>(title: String, isPresented: Binding<Bool>, choices: @escaping () -> [T], label: @escaping ((T) -> Label), onDone: @escaping ((T) -> Void) = { _ in }) -> some View {
         modifier(StringPickerModifier(title: title, isPresented: isPresented, choices: choices, label: label, onDone: onDone))
     }
 }

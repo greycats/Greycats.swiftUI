@@ -23,7 +23,7 @@ private class AsyncStorage {
         guard let bundleID = Bundle.main.bundleIdentifier, let root = try? FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true) else {
             fatalError("AsyncStorage can't load app support directory")
         }
-        
+
         let path = root.appendingPathComponent(bundleID).appendingPathComponent("RCTAsyncLocalStorage_V1")
         try? FileManager.default.createDirectory(at: path, withIntermediateDirectories: true, attributes: nil)
 
@@ -70,7 +70,7 @@ private class AsyncStorage {
         guard let data = key.data(using: .utf8) else {
             throw StorageError.invalidData
         }
-        
+
         let digest = Insecure.MD5.hash(data: data)
         let safeFileName = digest.map {
             String(format: "%02hhx", $0)

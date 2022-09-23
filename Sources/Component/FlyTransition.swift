@@ -30,8 +30,7 @@ struct FlyTransition: GeometryEffect {
 
         if pct <= 0.5 {
             return ProjectionTransform(transform3d).concatenating(affineTransform2).concatenating(affineTransform1)
-        }
-        else {
+        } else {
             return ProjectionTransform(transform3d).concatenating(affineTransform1)
         }
     }

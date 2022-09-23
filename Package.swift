@@ -14,7 +14,7 @@ let package = Package(
             targets: ["GreycatsPreference"]),
         .library(
             name: "GreycatsComponent",
-            targets: ["GreycatsComponent"]),
+            targets: ["GreycatsComponent"])
     ],
     dependencies: [],
     targets: [
