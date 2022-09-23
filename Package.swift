@@ -12,6 +12,9 @@ let package = Package(
         .library(
             name: "GreycatsPreference",
             targets: ["GreycatsPreference"]),
+        .library(
+            name: "GreycatsComponent",
+            targets: ["GreycatsComponent"]),
     ],
     dependencies: [],
     targets: [
@@ -19,6 +22,11 @@ let package = Package(
             name: "GreycatsPreference",
             path: "Sources",
             sources: ["Preference"]
+        ),
+        .target(
+            name: "GreycatsComponent",
+            path: "Sources",
+            sources: ["Component"]
         )
     ]
 )
