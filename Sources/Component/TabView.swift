@@ -15,11 +15,12 @@ public protocol IconTab: CaseIterable, Hashable where Self.AllCases: RandomAcces
     var label: Self.Label { get }
 }
 
-public struct TabItem<Tab>: View where Tab: IconTab {
+struct TabItem<Tab>: View where Tab: IconTab {
     var tab: Tab
     @Binding var tabIdx: Tab
 
-    public var body: some View {
+
+    var body: some View {
         Button(action: {
             withAnimation(.easeIn) {
                 tabIdx = tab
@@ -33,14 +34,19 @@ public struct TabItem<Tab>: View where Tab: IconTab {
                         .transition(.fly.combined(with: .opacity))
                 }
             }
-            .padding(.horizontal, 9)
-            .padding(.vertical, 5)
             .background(
                 RoundedRectangle(cornerRadius: 8)
                     .fill(tabIdx == tab ? Color(hue: 240 / 360.0, saturation: 0.05, brightness: 0.12) : .black.opacity(0))
+                    .padding(.vertical, -5)
+                    .padding(.horizontal, -9)
             )
         })
     }
+}
+
+public protocol TabItemStyle {
+    associatedtype Body: Shape
+    @ViewBuilder func backgroundShape(selected: Bool) -> Self.Body
 }
 
 extension View {
@@ -58,8 +64,8 @@ extension View {
     }
 }
 
-final class TabBarModel: ObservableObject {
-    @Published var hidden: Bool = false
+public final class TabBarModel: ObservableObject {
+    @Published public var hidden: Bool = false
 }
 
 private struct TabBarPreferences<Tab: IconTab>: PreferenceKey {
@@ -72,18 +78,21 @@ private struct TabBarPreferences<Tab: IconTab>: PreferenceKey {
     }
 }
 
-public struct TabView<Tab: IconTab, Content, FlyOut>: View where Content: View, FlyOut: View {
+public struct TabView<Tab: IconTab, Content, FlyOut, S>: View where Content: View, FlyOut: View, S: View {
     @Binding private var selection: Tab
-    @EnvironmentObject private var model: TabBarModel
+    @Binding private var tabBarHidden: Bool
     private var content: (Tab) -> Content
     private var flyOuts: ([Tab: CGPoint]) -> FlyOut
+    private var tabItemBackground: (Bool) -> S
 
     @State private var preferences: [Tab: CGPoint] = [:]
 
-    init(selection: Binding<Tab>, @ViewBuilder content: @escaping (Tab) -> Content, @ViewBuilder flyOuts: @escaping ([Tab: CGPoint]) -> FlyOut) {
+    init(selection: Binding<Tab>, tabBarHidden: Binding<Bool>, @ViewBuilder content: @escaping (Tab) -> Content, @ViewBuilder flyOuts: @escaping ([Tab: CGPoint]) -> FlyOut, @ViewBuilder tabItemBackground: @escaping (Bool) -> S) {
         _selection = selection
+        _tabBarHidden = tabBarHidden
         self.content = content
         self.flyOuts = flyOuts
+        self.tabItemBackground = tabItemBackground
     }
 
     public var body: some View {
@@ -97,7 +106,23 @@ public struct TabView<Tab: IconTab, Content, FlyOut>: View where Content: View, 
                         HStack {
                             Spacer()
                             ForEach(Tab.allCases, id: \.self) { tab in
-                                TabItem(tab: tab, tabIdx: $selection)
+                                Button(action: {
+                                    withAnimation(.easeIn) {
+                                        selection = tab
+                                    }
+                                }, label: {
+                                    HStack(alignment: .center) {
+                                        tab.icon
+
+                                        if selection == tab {
+                                            tab.label
+                                                .transition(.fly.combined(with: .opacity))
+                                        }
+                                    }
+                                    .background(
+                                        tabItemBackground(selection == tab)
+                                    )
+                                })
                                     .anchorPreference(
                                         key: TabBarPreferences<Tab>.self,
                                         value: .bounds
@@ -112,11 +137,8 @@ public struct TabView<Tab: IconTab, Content, FlyOut>: View where Content: View, 
                     }
 
                     .background(Color.black.opacity(0.3))
-                    .transition(.move(edge: .bottom))
-                    //                    .animation(.easeInOut(duration: 0.3))
-                    .if(model.hidden) {
-                        $0.hidden().frame(height: 0)
-                    }
+                    .animation(.easeInOut(duration: 0.3), value: tabBarHidden)
+                    .padding(.bottom, tabBarHidden ? -100 : 0)
                 }
                 flyOuts(preferences)
             }
@@ -129,68 +151,88 @@ public struct TabView<Tab: IconTab, Content, FlyOut>: View where Content: View, 
 }
 
 extension TabView where FlyOut == EmptyView {
-    init(selection: Binding<Tab>, @ViewBuilder content: @escaping (Tab) -> Content) {
-        self.init(selection: selection, content: content, flyOuts: { _ in EmptyView() })
-    }
-}
-
-enum Tab: String, Codable, CaseIterable, IconTab {
-    case cash = "Cash"
-    case points = "Points"
-    case cards = "Cards"
-
-    var icon: some View {
-        Group {
-            switch self {
-                case .cash:
-                    Image(systemName: "dollarsign.square")
-                case .points:
-                    Image(systemName: "giftcard")
-                case .cards:
-                    Image(systemName: "creditcard.and.123")
-            }
-        }
-    }
-
-    var label: some View {
-        Text(self.rawValue)
-            .textCase(.uppercase)
-            .font(.system(size: 12).weight(.semibold))
-            .foregroundColor(.white)
-    }
-}
-
-struct FlyOutImage: View {
-    var body: some View {
-        Text("Invite friends — earn points")
-            .font(.system(size: 12).weight(.semibold))
-            .foregroundColor(.black)
-            .background(RoundedRectangle(cornerRadius: 8)
-                .frame(width: 178, height: 32, alignment: .center)
-                .padding())
+    init(selection: Binding<Tab>, tabBarHidden: Binding<Bool>, @ViewBuilder content: @escaping (Tab) -> Content, @ViewBuilder tabItemBackground: @escaping (Bool) -> S) {
+        self.init(selection: selection, tabBarHidden: tabBarHidden, content: content, flyOuts: { _ in EmptyView() }, tabItemBackground: tabItemBackground)
     }
 }
 
 struct TabView_Previews: PreviewProvider {
+
+    enum Tab: String, IconTab {
+        case cash = "Cash"
+        case points = "Points"
+        case cards = "Cards"
+
+        var icon: some View {
+            Group {
+                switch self {
+                    case .cash:
+                        Image(systemName: "dollarsign.square")
+                    case .points:
+                        Image(systemName: "giftcard")
+                    case .cards:
+                        Image(systemName: "creditcard.and.123")
+                }
+            }
+            .foregroundColor(.white)
+        }
+
+        var label: some View {
+            Text(self.rawValue)
+                .textCase(.uppercase)
+                .font(.system(size: 12).weight(.semibold))
+                .foregroundColor(.white)
+        }
+    }
+
+    struct FlyOutImage: View {
+        var body: some View {
+            Text("Invite friends — earn points")
+                .font(.system(size: 12).weight(.semibold))
+                .foregroundColor(.black)
+                .background(RoundedRectangle(cornerRadius: 8)
+                    .frame(width: 178, height: 32, alignment: .center)
+                    .padding())
+        }
+    }
+
     struct TabViewContainer_Previews: View {
         @State var selection: Tab = .cash
+        @State var hidden = false
+
         @State var scrollOffset: CGFloat = 0
         @State var flyOutVisible = true
 
+
         var body: some View {
-            TabView(selection: $selection, content: { tab in
-                Text(tab.rawValue)
+            TabView(selection: $selection, tabBarHidden: $hidden, content: { tab in
+                Color.yellow
+                VStack(spacing: 50) {
+                    Button("\(hidden ? "show" : "hide") tabs") {
+                        hidden.toggle()
+                    }
+                    Button("\(flyOutVisible ? "hide" : "show") flyOut") {
+                        flyOutVisible.toggle()
+                    }
+                    Text(tab.rawValue)
+                }
+
             }, flyOuts: { preferences in
                 if flyOutVisible {
                     FlyOutImage()
                         .position(x: preferences[.points, default: .zero].x + 21, y: preferences[.points, default: .zero].y - 25)
                 }
+            }, tabItemBackground: { selected in
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(selected ? Color(hue: 240 / 360.0, saturation: 0.05, brightness: 0.12) : .black.opacity(0))
+                    .padding(.vertical, -5)
+                    .padding(.horizontal, -9)
             })
             .preferredColorScheme(.dark)
         }
     }
 
     static var previews: some View {
-        return TabViewContainer_Previews().environmentObject(TabBarModel())
+        return TabViewContainer_Previews()
     }
 }
