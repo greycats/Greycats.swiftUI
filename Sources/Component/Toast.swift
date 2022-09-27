@@ -20,21 +20,17 @@ struct Toast: View {
                     VStack(spacing: 8) {
                         if !title.isEmpty {
                             Text(LocalizedStringKey(title))
-                                .font(Font.body.bold())
-                                .multilineTextAlignment(.center)
-                                .foregroundColor(.white)
-                        } else {
-                            Text("no title")
-                                .foregroundColor(.red)
+                                .font(.system(.footnote).weight(.bold))
                         }
                         if !subtitle.isEmpty {
                             Text(LocalizedStringKey(subtitle))
-                                .font(Font.footnote)
+                                .font(.system(.caption))
                                 .opacity(0.7)
-                                .multilineTextAlignment(.center)
-                                .foregroundColor(.white)
                         }
                     }
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(.white)
+
                     .frame(width: proxy.size.width - 60)
                     .frame(maxWidth: 327)
                     .padding()
@@ -81,8 +77,8 @@ struct Toast_Previews: PreviewProvider {
         @State var toastIsPresented = false
         @State var inputText: String = ""
         @State var toastMessage: String = ""
-        @State var title = "Hello"
-        @State var subtitle = "World"
+        @State var title = "Is this a good or bad idea?"
+        @State var subtitle = "Is there a way to write this in a more generalized way?"
 
         var body: some View {
             VStack {
