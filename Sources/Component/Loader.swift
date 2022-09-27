@@ -14,6 +14,7 @@ public enum LoaderStyle {
 }
 
 struct SystemLoader: Presentable, AutoDismiss {
+    var position: PresentingPosition = .center
     var isPresented: Binding<Bool>
     var duration: DispatchTimeInterval
     var size: CGFloat
@@ -32,6 +33,7 @@ struct SystemLoader: Presentable, AutoDismiss {
 }
 
 struct TwoDotsSpinner: Presentable, AutoDismiss {
+    var position: PresentingPosition = .center
     var isPresented: Binding<Bool>
     var duration: DispatchTimeInterval
     var animation: Animation

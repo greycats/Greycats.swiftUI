@@ -14,9 +14,16 @@ extension AnyTransition {
     }
 }
 
+public enum PresentingPosition {
+    case top
+    case center
+    case bottom
+}
+
 public protocol Presentable {
     associatedtype Callout: View
     var isPresented: Binding<Bool> { get set }
+    var position: PresentingPosition { get set }
     @ViewBuilder func body(context: PresentableContext) -> Self.Callout
 }
 
@@ -32,7 +39,7 @@ struct PresentableViewModifier<T: Presentable>: ViewModifier {
     }
 
     public func body(content: Content) -> some View {
-        let context = PresentableContext.shared
+        let context = PresentableContext.shared[presentable.position]!
         content.onChange(of: presentable.isPresented.wrappedValue) {
             if $0 {
                 context.open(presentable: presentable)
@@ -48,7 +55,11 @@ public final class PresentableContext: ObservableObject {
 
     @Published public var boolFlag = false
 
-    static var shared = PresentableContext()
+    static var shared: [PresentingPosition: PresentableContext] = [
+        .top: PresentableContext(),
+        .center: PresentableContext(),
+        .bottom: PresentableContext()
+    ]
 
     var body: (() -> AnyView)?
 
@@ -98,14 +109,22 @@ public final class PresentableContext: ObservableObject {
 }
 
 public struct PresentableContainer: View {
-    @StateObject var context = PresentableContext.shared
+    @StateObject var top = PresentableContext.shared[.top]!
+    @StateObject var center = PresentableContext.shared[.center]!
+    @StateObject var bottom = PresentableContext.shared[.bottom]!
 
     public init() {
     }
 
     public var body: some View {
         Group {
-            if context.isPresented, let body = context.body {
+            if top.isPresented, let body = top.body {
+                body()
+            }
+            if center.isPresented, let body = center.body {
+                body()
+            }
+            if bottom.isPresented, let body = bottom.body {
                 body()
             }
         }

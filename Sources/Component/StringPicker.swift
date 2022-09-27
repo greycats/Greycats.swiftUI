@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct StringPicker<T, Label: View>: Presentable {
+    var position: PresentingPosition = .bottom
     private var title: String
     var isPresented: Binding<Bool>
     var label: (T) -> Label

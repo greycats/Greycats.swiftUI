@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct ToastHolder: Presentable, AutoDismiss {
+    var position: PresentingPosition = .bottom
     var isPresented: Binding<Bool>
     var duration: DispatchTimeInterval = .seconds(2)
     var title: String?
