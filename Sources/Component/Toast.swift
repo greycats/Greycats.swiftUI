@@ -40,12 +40,13 @@ struct Toast: View {
                     .onTapGesture {
                         isPresented = false
                     }
-                    .padding(.bottom, 40)
+                    .padding(.bottom, 64)
                 }
+
             }
-            .animation(.spring(), value: isPresented)
             .frame(width: proxy.size.width)
         }
+        .transition(.move(edge: .bottom))
     }
 }
 
@@ -56,7 +57,7 @@ struct ToastHolder: Presentable, AutoDismiss {
     @Binding var title: String
     @Binding var subtitle: String
 
-    @ViewBuilder func body(context: PresentableContext) -> some View {
+    var body: some View {
         Toast(title: $title, subtitle: $subtitle, isPresented: isPresented)
     }
 }

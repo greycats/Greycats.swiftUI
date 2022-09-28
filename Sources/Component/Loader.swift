@@ -22,24 +22,24 @@ struct SystemLoader: Presentable, AutoDismiss {
     var cornerRadius: CGFloat
     var shadowRadius: CGFloat
 
-    @ViewBuilder func body(context: PresentableContext) -> some View {
+    var body: some View {
         ProgressView()
             .progressViewStyle(.circular)
             .background(
                 RoundedRectangle(cornerRadius: cornerRadius)
                     .fill(backgroundColor).frame(width: size, height: size).shadow(radius: shadowRadius)
             )
+            .transition(.pop)
     }
 }
 
-struct TwoDotsSpinner: Presentable, AutoDismiss {
-    var position: PresentingPosition = .center
-    var isPresented: Binding<Bool>
-    var duration: DispatchTimeInterval
+struct TwoDotsSpinner: View {
     var animation: Animation
     var foregroundColor: Color
 
-    @ViewBuilder func body(context: PresentableContext) -> some View {
+    @State private var flag = false
+
+    var body: some View {
         HStack(alignment: .center, spacing: 10) {
             Circle()
                 .frame(width: 8, height: 8)
@@ -48,17 +48,29 @@ struct TwoDotsSpinner: Presentable, AutoDismiss {
                 .frame(width: 8, height: 8)
         }
         .frame(width: 30, height: 10)
-        .rotationEffect(Angle(degrees: context.boolFlag ? 360 : 0))
+        .rotationEffect(Angle(degrees: flag ? 360 : 0))
         .transaction { view in
             view.animation = animation
         }
         .onAppear {
-            context.boolFlag = true
+            flag = true
         }
         .onDisappear {
-            context.boolFlag = false
+            flag = false
         }
         .foregroundColor(foregroundColor)
+    }
+}
+
+struct TwoDotsSpinnerModifier: Presentable, AutoDismiss {
+    var position: PresentingPosition = .center
+    var isPresented: Binding<Bool>
+    var duration: DispatchTimeInterval
+    var animation: Animation
+    var foregroundColor: Color
+
+    var body: some View {
+        TwoDotsSpinner(animation: animation, foregroundColor: foregroundColor)
     }
 }
 
@@ -69,9 +81,10 @@ extension View {
                 case .system(let size, let backgroundColor, let cornerRadius, let shadowRadius):
                     callout(SystemLoader(isPresented: isPresented, duration: duration, size: size, backgroundColor: backgroundColor, cornerRadius: cornerRadius, shadowRadius: shadowRadius))
                 case .twoDots(animation: let animation, foregroundColor: let foregroundColor):
-                    callout(TwoDotsSpinner(isPresented: isPresented,  duration: duration, animation: animation, foregroundColor: foregroundColor))
+                    callout(TwoDotsSpinnerModifier(isPresented: isPresented,  duration: duration, animation: animation, foregroundColor: foregroundColor))
             }
         }
+
     }
 }
 

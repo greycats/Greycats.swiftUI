@@ -20,11 +20,9 @@ public enum PresentingPosition {
     case bottom
 }
 
-public protocol Presentable {
-    associatedtype Callout: View
+public protocol Presentable: View {
     var isPresented: Binding<Bool> { get set }
     var position: PresentingPosition { get set }
-    @ViewBuilder func body(context: PresentableContext) -> Self.Callout
 }
 
 public protocol AutoDismiss {
@@ -70,7 +68,9 @@ public final class PresentableContext: ObservableObject {
     var subscriber: AnyCancellable?
 
     func close() {
-        isPresented = false
+        withAnimation {
+            isPresented = false
+        }
         cancel()
     }
 
@@ -81,8 +81,11 @@ public final class PresentableContext: ObservableObject {
 
     func open<T: Presentable>(presentable: T) {
         cancel()
-        self.body = { AnyView(presentable.body(context: self)) }
-        isPresented = true
+        self.body = { AnyView(presentable.body) }
+        withAnimation {
+            isPresented = true
+        }
+
         var subscriber: AnyCancellable?
         subscriber = $isPresented
             .map { !$0 }
@@ -129,7 +132,6 @@ public struct PresentableContainer: View {
             }
         }
         .edgesIgnoringSafeArea(.all)
-        .transition(.pop)
     }
 }
 

@@ -7,17 +7,16 @@
 
 import SwiftUI
 
-struct StringPicker<T, Label: View>: Presentable {
-    var position: PresentingPosition = .bottom
+struct StringPicker<T, Label: View>: View {
     private var title: String
-    var isPresented: Binding<Bool>
+    @Binding var isPresented: Bool
     var label: (T) -> Label
     var choices: () -> [T]
     var onDone: (T) -> Void
 
     init(title: String, isPresented: Binding<Bool>, choices: @escaping () -> [T], label: @escaping (T) -> Label, onDone: @escaping (T) -> Void) {
         self.title = title
-        self.isPresented = isPresented
+        _isPresented = isPresented
         self.choices = choices
         self.label = label
         self.onDone = onDone
@@ -29,20 +28,23 @@ struct StringPicker<T, Label: View>: Presentable {
         let _choices = choices()
         VStack {
             HStack {
-                Button("Cancel") {
+                Button(LocalizedStringKey("Cancel")) {
                     close()
                 }
+                .font(.system(.body).weight(.bold))
                 Spacer()
-                Text(title).font(.system(size: 18).weight(.medium))
+                Text(LocalizedStringKey(title)).font(.system(.callout).weight(.medium))
                     .foregroundColor(.black)
                 Spacer()
-                Button("Done") {
+                Button(LocalizedStringKey("Done")) {
                     close()
                     onDone(_choices[selection.wrappedValue])
                 }
+                .font(.system(.body).weight(.bold))
             }
+
             .padding()
-            .background(Color(red: 0.93, green: 0.93, blue: 0.93))
+            .background(Color(red: 0.93, green: 0.93, blue: 0.93).shadow(color: .black.opacity(0.02), radius: 2, y: -2))
             Picker(title, selection: selection) {
                 ForEach(0..<_choices.count, id: \.self) { index in
                     label(_choices[index]).tag(index)
@@ -53,13 +55,38 @@ struct StringPicker<T, Label: View>: Presentable {
         .background(Color.white)
     }
 
-    func body(context: PresentableContext) -> some View {
+    var body: some View {
+        Color.black.opacity(0.2)
+            .transition(.opacity)
         VStack {
             Spacer()
-            picker(close: { context.isPresented = false })
+            picker(close: { isPresented = false })
                 .foregroundColor(.accentColor)
+                .background {
+                    Color.white
+                }
+
         }
+        .transition(.move(edge: .bottom))
     }
+}
+
+struct StringPickerPresentable<Content>: Presentable where Content: View {
+
+    var position: PresentingPosition = .bottom
+    var isPresented: Binding<Bool>
+
+    var content: Content
+    var body: some View {
+        content
+    }
+
+    init(@ViewBuilder body: () -> Content, isPresented: Binding<Bool>, position: PresentingPosition) {
+        self.content = body()
+        self.isPresented = isPresented
+        self.position = position
+    }
+
 }
 
 struct StringPickerModifier<T, Label: View>: ViewModifier {
@@ -77,7 +104,7 @@ struct StringPickerModifier<T, Label: View>: ViewModifier {
                 picker.picker(close: { isPresented = false })
             }
         } else {
-            content.callout(picker)
+            content.callout(StringPickerPresentable(body: { picker }, isPresented: $isPresented, position: .bottom))
         }
     }
 }
