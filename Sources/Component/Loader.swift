@@ -81,7 +81,7 @@ extension View {
                 case .system(let size, let backgroundColor, let cornerRadius, let shadowRadius):
                     callout(SystemLoader(isPresented: isPresented, duration: duration, size: size, backgroundColor: backgroundColor, cornerRadius: cornerRadius, shadowRadius: shadowRadius))
                 case .twoDots(animation: let animation, foregroundColor: let foregroundColor):
-                    callout(TwoDotsSpinnerModifier(isPresented: isPresented,  duration: duration, animation: animation, foregroundColor: foregroundColor))
+                    callout(TwoDotsSpinnerModifier(isPresented: isPresented,   duration: duration, animation: animation, foregroundColor: foregroundColor))
             }
         }
 
@@ -116,4 +116,3 @@ struct Loader_Previews: PreviewProvider {
         }
     }
 }
-

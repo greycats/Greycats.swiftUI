@@ -37,7 +37,7 @@ private struct TabBarPreferences<Tab: IconTab>: PreferenceKey {
     }
 }
 
-public struct TabView<Tab: IconTab, Content, FlyOut>: View where Content: View, FlyOut: View{
+public struct TabView<Tab: IconTab, Content, FlyOut>: View where Content: View, FlyOut: View {
     @Binding private var selection: Tab
     @Binding private var tabBarHidden: Bool
     private var content: (Tab) -> Content
@@ -45,7 +45,7 @@ public struct TabView<Tab: IconTab, Content, FlyOut>: View where Content: View, 
 
     @State private var preferences: [Tab: CGPoint] = [:]
 
-    init(selection: Binding<Tab>, tabBarHidden: Binding<Bool>, @ViewBuilder content: @escaping (Tab) -> Content, @ViewBuilder flyOuts: @escaping ([Tab: CGPoint]) -> FlyOut) {
+    public init(selection: Binding<Tab>, tabBarHidden: Binding<Bool>, @ViewBuilder content: @escaping (Tab) -> Content, @ViewBuilder flyOuts: @escaping ([Tab: CGPoint]) -> FlyOut) {
         _selection = selection
         _tabBarHidden = tabBarHidden
         self.content = content
@@ -84,7 +84,7 @@ public struct TabView<Tab: IconTab, Content, FlyOut>: View where Content: View, 
                     }
 
                     .background(Color.black.opacity(0.3))
-                    .animation(.easeInOut(duration: 0.3), value: tabBarHidden)
+                    .animation(.easeIn(duration: 0.25), value: tabBarHidden)
                     .padding(.bottom, tabBarHidden ? -100 : 0)
                 }
                 flyOuts(preferences)
@@ -98,13 +98,13 @@ public struct TabView<Tab: IconTab, Content, FlyOut>: View where Content: View, 
 }
 
 extension TabView where FlyOut == EmptyView {
-    init(selection: Binding<Tab>, tabBarHidden: Binding<Bool>, @ViewBuilder content: @escaping (Tab) -> Content) {
+    public init(selection: Binding<Tab>, tabBarHidden: Binding<Bool>, @ViewBuilder content: @escaping (Tab) -> Content) {
         self.init(selection: selection, tabBarHidden: tabBarHidden, content: content, flyOuts: { _ in EmptyView() })
     }
 }
 
 struct TabView_Previews: PreviewProvider {
-   
+
     enum Tab: String, IconTab {
         case cash = "Cash"
         case points = "Points"
@@ -116,6 +116,7 @@ struct TabView_Previews: PreviewProvider {
                 if selected {
                     label
                         .transition(.fly.combined(with: .opacity))
+
                 }
             }
             .padding(.vertical, 5)
@@ -123,7 +124,9 @@ struct TabView_Previews: PreviewProvider {
             .background(
                 RoundedRectangle(cornerRadius: 8)
                     .fill(selected ? Color(hue: 240 / 360.0, saturation: 0.05, brightness: 0.12) : .black.opacity(0))
+
             )
+            .animation(.spring(response: 0.2, dampingFraction: 0.5), value: selected)
         }
 
         var icon: some View {
@@ -165,7 +168,6 @@ struct TabView_Previews: PreviewProvider {
 
         @State var scrollOffset: CGFloat = 0
         @State var flyOutVisible = true
-
 
         var body: some View {
             TabView(selection: $selection, tabBarHidden: $hidden, content: { tab in
