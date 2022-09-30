@@ -37,6 +37,17 @@ private struct TabBarPreferences<Tab: IconTab>: PreferenceKey {
     }
 }
 
+private struct TabBackgroundColorKey: EnvironmentKey {
+    static let defaultValue = Color(.secondarySystemBackground)
+}
+
+extension EnvironmentValues {
+    public var tabBackgroundColor: Color {
+        get { self[TabBackgroundColorKey.self] }
+        set { self[TabBackgroundColorKey.self] = newValue }
+    }
+}
+
 public struct TabView<Tab: IconTab, Content, FlyOut>: View where Content: View, FlyOut: View {
     @Binding private var selection: Tab
     @Binding private var tabBarHidden: Bool
@@ -44,6 +55,7 @@ public struct TabView<Tab: IconTab, Content, FlyOut>: View where Content: View, 
     private var flyOuts: ([Tab: CGPoint]) -> FlyOut
 
     @State private var preferences: [Tab: CGPoint] = [:]
+    @Environment(\.tabBackgroundColor) var tabBackgroundColor
 
     public init(selection: Binding<Tab>, tabBarHidden: Binding<Bool>, @ViewBuilder content: @escaping (Tab) -> Content, @ViewBuilder flyOuts: @escaping ([Tab: CGPoint]) -> FlyOut) {
         _selection = selection
@@ -80,12 +92,12 @@ public struct TabView<Tab: IconTab, Content, FlyOut>: View where Content: View, 
                             }
                         }
                         .padding(.top, 20)
-                        .padding(.bottom, 50)
+                        .padding(.bottom, 20 + geometry.safeAreaInsets.bottom)
                     }
 
-                    .background(Color.black.opacity(0.3))
                     .animation(.easeIn(duration: 0.25), value: tabBarHidden)
                     .padding(.bottom, tabBarHidden ? -100 : 0)
+                    .background(tabBackgroundColor)
                 }
                 flyOuts(preferences)
             }
@@ -119,11 +131,11 @@ struct TabView_Previews: PreviewProvider {
 
                 }
             }
-            .padding(.vertical, 5)
-            .padding(.horizontal, 9)
+            .padding(.vertical, 13)
+            .padding(.horizontal, 13)
             .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(selected ? Color(hue: 240 / 360.0, saturation: 0.05, brightness: 0.12) : .black.opacity(0))
+                RoundedRectangle(cornerRadius: 22)
+                    .fill(selected ? Color(red: 0.404, green: 0.420, blue: 0.529) : .clear)
 
             )
             .animation(.spring(response: 0.2, dampingFraction: 0.5), value: selected)
@@ -188,6 +200,7 @@ struct TabView_Previews: PreviewProvider {
                         .position(x: preferences[.points, default: .zero].x + 21, y: preferences[.points, default: .zero].y - 25)
                 }
             })
+            .environment(\.tabBackgroundColor, Color(red: 0.310, green: 0.322, blue: 0.408))
             .preferredColorScheme(.dark)
         }
     }
