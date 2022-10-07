@@ -41,6 +41,19 @@ private struct TabBackgroundColorKey: EnvironmentKey {
     static let defaultValue = Color(.secondarySystemBackground)
 }
 
+public struct ShadowOptions: EnvironmentKey {
+    public static let defaultValue: ShadowOptions = .drop(radius: 16)
+
+    let color: Color
+    let radius: CGFloat
+    let x: CGFloat
+    let y: CGFloat
+
+    public static func drop(color: Color = .init(.sRGBLinear, white: 0, opacity: 0.33), radius: CGFloat, x: CGFloat = 0, y: CGFloat = 0) -> ShadowOptions {
+        return ShadowOptions(color: color, radius: radius, x: x, y: y)
+    }
+}
+
 private struct TabVerticalPadding: EnvironmentKey {
     static let defaultValue: CGFloat = 20
 }
@@ -55,6 +68,11 @@ extension EnvironmentValues {
         get { self[TabVerticalPadding.self] }
         set { self[TabVerticalPadding.self] = newValue }
     }
+
+    public var shadowOptions: ShadowOptions {
+        get { self[ShadowOptions.self] }
+        set { self[ShadowOptions.self] = newValue }
+    }
 }
 
 public struct TabView<Tab: IconTab, Content, FlyOut>: View where Content: View, FlyOut: View {
@@ -66,6 +84,7 @@ public struct TabView<Tab: IconTab, Content, FlyOut>: View where Content: View, 
     @State private var preferences: [Tab: CGPoint] = [:]
     @Environment(\.tabBackgroundColor) var tabBackgroundColor
     @Environment(\.tabVerticalPadding) var verticalPadding
+    @Environment(\.shadowOptions) var shadowOptions
 
     public init(selection: Binding<Tab>, tabBarHidden: Binding<Bool>, @ViewBuilder content: @escaping (Tab) -> Content, @ViewBuilder flyOuts: @escaping ([Tab: CGPoint]) -> FlyOut) {
         _selection = selection
@@ -102,13 +121,14 @@ public struct TabView<Tab: IconTab, Content, FlyOut>: View where Content: View, 
                             }
                         }
                         .padding(.vertical, verticalPadding)
-//                        .padding(.top, 20)
-//                        .padding(.bottom, 20 + geometry.safeAreaInsets.bottom)
                     }
 
                     .animation(.easeIn(duration: 0.25), value: tabBarHidden)
                     .padding(.bottom, tabBarHidden ? -100 : 0)
-                    .background(tabBackgroundColor)
+                    .background(
+                        tabBackgroundColor.edgesIgnoringSafeArea(.bottom)
+                        .shadow(color: shadowOptions.color, radius: shadowOptions.radius, x: shadowOptions.x, y: shadowOptions.y)
+                    )
                 }
                 flyOuts(preferences)
             }
@@ -212,6 +232,7 @@ struct TabView_Previews: PreviewProvider {
             })
             .environment(\.tabBackgroundColor, Color(red: 0.310, green: 0.322, blue: 0.408))
             .environment(\.tabVerticalPadding, UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12)
+            .environment(\.shadowOptions, .drop(color: .init(.sRGBLinear, white: 0, opacity: 0.05), radius: 16, x: 0, y: -4))
             .preferredColorScheme(.dark)
         }
     }
