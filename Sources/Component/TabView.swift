@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-public protocol IconTab: CaseIterable, Hashable where Self.AllCases: RandomAccessCollection {
+public protocol IconTab: Hashable {
     associatedtype TabItem: View
     @ViewBuilder func tabItem(selected: Bool) -> Self.TabItem
 }
@@ -86,6 +86,7 @@ extension EnvironmentValues {
 
 public struct TabView<Tab: IconTab, Content, FlyOut>: View where Content: View, FlyOut: View {
     @Binding private var selection: Tab
+    @Binding private var tabs: [Tab]
     @Binding private var tabBarHidden: Bool
     private var content: (Tab) -> Content
     private var flyOuts: ([Tab: CGPoint]) -> FlyOut
@@ -96,11 +97,27 @@ public struct TabView<Tab: IconTab, Content, FlyOut>: View where Content: View, 
     @Environment(\.shadowOptions) var shadowOptions
     @Environment(\.animation) var animation
 
-    public init(selection: Binding<Tab>, tabBarHidden: Binding<Bool>, @ViewBuilder content: @escaping (Tab) -> Content, @ViewBuilder flyOuts: @escaping ([Tab: CGPoint]) -> FlyOut) {
+    public init(selection: Binding<Tab>, tabs: Binding<[Tab]>, tabBarHidden: Binding<Bool>, @ViewBuilder content: @escaping (Tab) -> Content, @ViewBuilder flyOuts: @escaping ([Tab: CGPoint]) -> FlyOut) {
         _selection = selection
+        _tabs = tabs
         _tabBarHidden = tabBarHidden
         self.content = content
         self.flyOuts = flyOuts
+    }
+
+    @ViewBuilder func tabItem(tab: Tab, geometry: GeometryProxy) -> some View {
+        Button(action: {
+            selection = tab
+        }, label: {
+            tab.tabItem(selected: selection == tab)
+        })
+        .animation(animation, value: selection)
+        .anchorPreference(
+            key: TabBarPreferences<Tab>.self,
+            value: .bounds
+        ) {
+            [tab: geometry[$0].origin]
+        }
     }
 
     public var body: some View {
@@ -113,19 +130,8 @@ public struct TabView<Tab: IconTab, Content, FlyOut>: View where Content: View, 
                     VStack {
                         HStack {
                             Spacer()
-                            ForEach(Tab.allCases, id: \.self) { tab in
-                                Button(action: {
-                                    selection = tab
-                                }, label: {
-                                    tab.tabItem(selected: selection == tab)
-                                })
-                                .animation(animation, value: selection)
-                                .anchorPreference(
-                                    key: TabBarPreferences<Tab>.self,
-                                    value: .bounds
-                                ) {
-                                    [tab: geometry[$0].origin]
-                                }
+                            ForEach(tabs, id: \.self) { tab in
+                                tabItem(tab: tab, geometry: geometry)
                                 Spacer()
                             }
                         }
@@ -149,29 +155,37 @@ public struct TabView<Tab: IconTab, Content, FlyOut>: View where Content: View, 
 }
 
 extension TabView where FlyOut == EmptyView {
-    public init(selection: Binding<Tab>, tabBarHidden: Binding<Bool>, @ViewBuilder content: @escaping (Tab) -> Content) {
-        self.init(selection: selection, tabBarHidden: tabBarHidden, content: content, flyOuts: { _ in EmptyView() })
+    public init(selection: Binding<Tab>, tabs: Binding<[Tab]>, tabBarHidden: Binding<Bool>, @ViewBuilder content: @escaping (Tab) -> Content) {
+        self.init(selection: selection, tabs: tabs, tabBarHidden: tabBarHidden, content: content, flyOuts: { _ in EmptyView() })
     }
 }
 
+
+extension TabView where Tab: CaseIterable, Tab.AllCases: RandomAccessCollection {
+    public init(selection: Binding<Tab>, tabBarHidden: Binding<Bool>, @ViewBuilder content: @escaping (Tab) -> Content, @ViewBuilder flyOuts: @escaping ([Tab: CGPoint]) -> FlyOut) {
+        self.init(selection: selection, tabs: .constant(Tab.allCases as! [Tab]), tabBarHidden: tabBarHidden, content: content, flyOuts: flyOuts)
+    }
+}
+
+extension TabView where Tab: CaseIterable, Tab.AllCases: RandomAccessCollection, FlyOut == EmptyView {
+    public init(selection: Binding<Tab>, tabBarHidden: Binding<Bool>, @ViewBuilder content: @escaping (Tab) -> Content) {
+        self.init(selection: selection, tabs: .constant(Tab.allCases as! [Tab]), tabBarHidden: tabBarHidden, content: content, flyOuts: { _ in EmptyView() })
+    }
+}
+
+
 struct TabView_Previews: PreviewProvider {
 
-    enum Tab: String, IconTab {
+    enum Tab: String, IconTab, CaseIterable {
         case cash = "Cash"
         case points = "Points"
         case cards = "Cards"
-
-//        static var allCases: [Tab] {
-//            return [.cash]
-//        }
 
         func tabItem(selected: Bool) -> some View {
             HStack(alignment: .center) {
                 icon
                 if selected {
-                    label
-                        .transition(.fly.combined(with: .opacity))
-
+                    label.transition(.fly.combined(with: .opacity))
                 }
             }
             .padding(.vertical, 13)
