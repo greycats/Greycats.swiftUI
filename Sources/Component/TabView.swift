@@ -41,6 +41,10 @@ private struct TabBackgroundColorKey: EnvironmentKey {
     static let defaultValue = Color(.secondarySystemBackground)
 }
 
+private struct TabAnimationKey: EnvironmentKey {
+    static let defaultValue: Animation = .easeIn(duration: 0.25)
+}
+
 public struct ShadowOptions: EnvironmentKey {
     public static let defaultValue: ShadowOptions = .drop(radius: 16)
 
@@ -73,6 +77,11 @@ extension EnvironmentValues {
         get { self[ShadowOptions.self] }
         set { self[ShadowOptions.self] = newValue }
     }
+
+    public var animation: Animation {
+        get { self[TabAnimationKey.self] }
+        set { self[TabAnimationKey.self] = newValue }
+    }
 }
 
 public struct TabView<Tab: IconTab, Content, FlyOut>: View where Content: View, FlyOut: View {
@@ -85,6 +94,7 @@ public struct TabView<Tab: IconTab, Content, FlyOut>: View where Content: View, 
     @Environment(\.tabBackgroundColor) var tabBackgroundColor
     @Environment(\.tabVerticalPadding) var verticalPadding
     @Environment(\.shadowOptions) var shadowOptions
+    @Environment(\.animation) var animation
 
     public init(selection: Binding<Tab>, tabBarHidden: Binding<Bool>, @ViewBuilder content: @escaping (Tab) -> Content, @ViewBuilder flyOuts: @escaping ([Tab: CGPoint]) -> FlyOut) {
         _selection = selection
@@ -105,12 +115,11 @@ public struct TabView<Tab: IconTab, Content, FlyOut>: View where Content: View, 
                             Spacer()
                             ForEach(Tab.allCases, id: \.self) { tab in
                                 Button(action: {
-                                    withAnimation(.easeIn) {
-                                        selection = tab
-                                    }
+                                    selection = tab
                                 }, label: {
                                     tab.tabItem(selected: selection == tab)
                                 })
+                                .animation(animation, value: selection)
                                 .anchorPreference(
                                     key: TabBarPreferences<Tab>.self,
                                     value: .bounds
@@ -122,12 +131,12 @@ public struct TabView<Tab: IconTab, Content, FlyOut>: View where Content: View, 
                         }
                         .padding(.vertical, verticalPadding)
                     }
-
                     .animation(.easeIn(duration: 0.25), value: tabBarHidden)
-                    .padding(.bottom, tabBarHidden ? -100 : 0)
+                    .padding(.bottom, tabBarHidden ? -geometry.safeAreaInsets.bottom : 0)
                     .background(
-                        tabBackgroundColor.edgesIgnoringSafeArea(.bottom)
-                        .shadow(color: shadowOptions.color, radius: shadowOptions.radius, x: shadowOptions.x, y: shadowOptions.y)
+                        tabBackgroundColor
+                            .edgesIgnoringSafeArea(.bottom)
+                            .shadow(color: shadowOptions.color, radius: shadowOptions.radius, x: shadowOptions.x, y: shadowOptions.y)
                     )
                 }
                 flyOuts(preferences)
@@ -152,6 +161,10 @@ struct TabView_Previews: PreviewProvider {
         case points = "Points"
         case cards = "Cards"
 
+//        static var allCases: [Tab] {
+//            return [.cash]
+//        }
+
         func tabItem(selected: Bool) -> some View {
             HStack(alignment: .center) {
                 icon
@@ -168,7 +181,6 @@ struct TabView_Previews: PreviewProvider {
                     .fill(selected ? Color(red: 0.404, green: 0.420, blue: 0.529) : .clear)
 
             )
-            .animation(.spring(response: 0.2, dampingFraction: 0.5), value: selected)
         }
 
         var icon: some View {
@@ -233,6 +245,7 @@ struct TabView_Previews: PreviewProvider {
             .environment(\.tabBackgroundColor, Color(red: 0.310, green: 0.322, blue: 0.408))
             .environment(\.tabVerticalPadding, UIDevice.current.userInterfaceIdiom == .pad ? 16 : 12)
             .environment(\.shadowOptions, .drop(color: .init(.sRGBLinear, white: 0, opacity: 0.05), radius: 16, x: 0, y: -4))
+            .environment(\.animation, .spring(response: 0.2, dampingFraction: 0.5))
             .preferredColorScheme(.dark)
         }
     }
